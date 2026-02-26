@@ -1,0 +1,106 @@
+
+Table: badges
+  id (integer)
+  name (character varying)
+  icon (character varying)
+  description (text)
+
+Table: courses
+  id (integer)
+  title (character varying)
+  description (text)
+  instructor_id (integer)
+  created_at (timestamp without time zone)
+  category (character varying)
+  thumbnail (character varying)
+  level (character varying)
+  price (numeric)
+
+Table: enrollments
+  id (integer)
+  student_id (integer)
+  course_id (integer)
+  enrolled_at (timestamp without time zone)
+  progress (integer)
+  last_accessed (timestamp without time zone)
+
+Table: lessons
+  id (integer)
+  course_id (integer)
+  title (character varying)
+  duration (character varying)
+  type (character varying)
+  video_url (character varying)
+  order (integer)
+
+Table: notifications
+  id (integer)
+  user_id (integer)
+  title (character varying)
+  message (text)
+  type (character varying)
+  is_read (boolean)
+  created_at (timestamp without time zone)
+
+Table: questions
+  id (integer)
+  quiz_id (integer)
+  question (text)
+  options (jsonb)
+  correct (integer)
+  difficulty (character varying)
+  hint (text)
+  explanation (text)
+  created_at (timestamp without time zone)
+
+Table: quiz_scores
+  id (integer)
+  student_id (integer)
+  quiz_id (integer)
+  score (integer)
+  completed_at (timestamp without time zone)
+
+Table: quizzes
+  id (integer)
+  course_id (integer)
+  title (character varying)
+  total_score (integer)
+  created_at (timestamp without time zone)
+
+Table: student_activity
+  id (integer)
+  student_id (integer)
+  course_id (integer)
+  time_spent_minutes (integer)
+  login_frequency (integer)
+  date (date)
+  updated_at (timestamp without time zone)
+
+Table: study_plans
+  id (integer)
+  student_id (integer)
+  title (character varying)
+  time (character varying)
+  category (character varying)
+  completed (boolean)
+  date (date)
+
+Table: user_badges
+  id (integer)
+  user_id (integer)
+  badge_id (integer)
+  earned_at (timestamp without time zone)
+
+Table: users
+  id (integer)
+  name (character varying)
+  email (character varying)
+  password_hash (character varying)
+  role (character varying)
+  created_at (timestamp without time zone)
+  xp (integer)
+  streak (integer)
+  level (integer)
+  avatar (character varying)
+  last_login (timestamp without time zone)
+  status (character varying)

@@ -100,6 +100,19 @@ exports.enrollCourse = async (req, res) => {
         }
 
         await db.query('INSERT INTO enrollments (student_id, course_id) VALUES ($1, $2)', [studentId, courseId]);
+
+        // Generate dynamic notification
+        try {
+            const courseRow = await db.query('SELECT title FROM courses WHERE id = $1', [courseId]);
+            if (courseRow.rows.length > 0) {
+                const msg = "You successfully enrolled in '" + courseRow.rows[0].title + "'. Time to start learning!";
+                await db.query(`
+                    INSERT INTO notifications (user_id, title, message, type) 
+                    VALUES ($1, $2, $3, $4)
+                `, [studentId, 'Course Enrolled', msg, 'info']);
+            }
+        } catch (e) { console.error("Notification creation failed:", e); }
+
         res.status(201).json({ message: 'Enrolled successfully' });
     } catch (err) {
         console.error(err);
@@ -120,19 +133,19 @@ exports.getStudentStats = async (req, res) => {
         // Real Study Hours Logic (Simplified for brevity, can import from helper or copy full logic if needed)
         // Copying full logic to ensure "working remain same"
         const studyHoursQuery = await db.query(`
-            WITH weeks AS (
-                SELECT generate_series(
-                    date_trunc('week', CURRENT_DATE - INTERVAL '7 weeks'),
-                    date_trunc('week', CURRENT_DATE),
-                    '1 week'::interval
-                ) as week_start
-            )
+            WITH weeks AS(
+                    SELECT generate_series(
+                        date_trunc('week', CURRENT_DATE - INTERVAL '7 weeks'),
+                        date_trunc('week', CURRENT_DATE),
+                        '1 week':: interval
+                    ) as week_start
+                )
             SELECT w.week_start, COALESCE(SUM(sa.time_spent_minutes), 0) / 60.0 as hours
             FROM weeks w
             LEFT JOIN student_activity sa ON date_trunc('week', sa.date) = w.week_start AND sa.student_id = $1
             GROUP BY w.week_start
             ORDER BY w.week_start
-        `, [studentId]);
+                        `, [studentId]);
 
         // Fetch daily data for the same period
         const dailyStudyHoursQuery = await db.query(`
@@ -141,7 +154,7 @@ exports.getStudentStats = async (req, res) => {
             WHERE student_id = $1 AND date >= CURRENT_DATE - INTERVAL '8 weeks'
             GROUP BY date
             ORDER BY date
-        `, [studentId]);
+                        `, [studentId]);
 
         // Format dates as "DD MMM" (e.g., "12 Oct")
         const formatDate = (date) => {
@@ -155,7 +168,7 @@ exports.getStudentStats = async (req, res) => {
             const sMonth = s.toLocaleString('default', { month: 'short' });
             const eMonth = e.toLocaleString('default', { month: 'short' });
             if (sMonth === eMonth) {
-                return `${s.getDate()}-${e.getDate()} ${sMonth}`;
+                return `${s.getDate()} - ${e.getDate()} ${sMonth}`;
             }
             return `${s.getDate()} ${sMonth} - ${e.getDate()} ${eMonth}`;
         };
@@ -191,19 +204,19 @@ exports.getStudentStats = async (req, res) => {
         });
 
         const quizTrendQuery = await db.query(`
-            WITH weeks AS (
-                SELECT generate_series(
-                    date_trunc('week', CURRENT_DATE - INTERVAL '7 weeks'),
-                    date_trunc('week', CURRENT_DATE),
-                    '1 week'::interval
-                ) as week_start
-            )
+            WITH weeks AS(
+                            SELECT generate_series(
+                                date_trunc('week', CURRENT_DATE - INTERVAL '7 weeks'),
+                                date_trunc('week', CURRENT_DATE),
+                                '1 week':: interval
+                            ) as week_start
+                        )
             SELECT w.week_start, COALESCE(AVG(qs.score), 0) as avg_score
             FROM weeks w
             LEFT JOIN quiz_scores qs ON date_trunc('week', qs.completed_at) = w.week_start AND qs.student_id = $1
             GROUP BY w.week_start
             ORDER BY w.week_start
-        `, [studentId]);
+                        `, [studentId]);
 
         const quizTrend = quizTrendQuery.rows.map(r => ({
             week: formatDate(r.week_start),

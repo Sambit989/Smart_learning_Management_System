@@ -103,7 +103,33 @@ exports.submitQuiz = async (req, res) => {
             }).catch(err => console.error("ML Service Error (Async):", err.message));
         } catch (e) { }
 
-        // 6. Instant Feedback
+        // 6. Dynamic Notifications 🔔
+        await db.query(`
+            INSERT INTO notifications (user_id, title, message, type) 
+            VALUES ($1, $2, $3, $4)
+        `, [studentId, 'Quiz Result', `You scored ${score}% on your last quiz! Earned +${xpEarned} XP.`, score >= 80 ? 'success' : 'info']);
+
+        for (const badge of newBadges) {
+            let badgeName = "a New Badge";
+            if (badge === 1) badgeName = "First Steps";
+            if (badge === 2) badgeName = "Quiz Master";
+            if (badge === 3) badgeName = "Streak Hunter";
+            if (badge === 6) badgeName = "Night Owl";
+
+            await db.query(`
+                INSERT INTO notifications (user_id, title, message, type) 
+                VALUES ($1, $2, $3, $4)
+            `, [studentId, 'New Badge Earned', `You've earned the '${badgeName}' badge!`, 'success']);
+        }
+
+        if (newLevel > (userRes.rows[0].level || 1)) {
+            await db.query(`
+                INSERT INTO notifications (user_id, title, message, type) 
+                VALUES ($1, $2, $3, $4)
+            `, [studentId, 'Level Up!', `Congratulations! You reached Level ${newLevel}!`, 'alert']);
+        }
+
+        // 7. Instant Feedback
         res.status(201).json({
             ...scoreRecord.rows[0],
             xpEarned,

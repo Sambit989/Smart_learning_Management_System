@@ -61,7 +61,7 @@ export default function NotificationPanel({ onClose, onRead }: { onClose: () => 
       initial={{ opacity: 0, y: -10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      className="absolute right-0 top-12 w-96 glass-card rounded-xl shadow-xl border border-border/50 overflow-hidden"
+      className="absolute right-0 top-12 w-96 bg-white dark:bg-background rounded-xl shadow-2xl border border-border/50 overflow-hidden"
     >
       <div className="flex items-center justify-between p-4 border-b border-border/50">
         <h3 className="font-semibold text-foreground">Notifications</h3>

@@ -78,16 +78,8 @@ const generateData = async () => {
             courseIds.push(res.rows[0].id);
         }
 
-        // 3. Enroll Student
-        console.log('Enrolling Student...');
-        await pool.query(
-            "INSERT INTO enrollments (student_id, course_id, enrolled_at) VALUES ($1, $2, NOW() - INTERVAL '2 months')",
-            [studentId, courseIds[0]]
-        );
-
-        // 4. Create Activity (Historical)
-        console.log('Logging Historical Activity...');
-        // Add date column if not exists (handled by CREATE TABLE usually, but here we insert multiple rows)
+        // Create Tables for gamification/features
+        console.log('Creating Schema...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS student_activity (
                 id SERIAL PRIMARY KEY,
@@ -99,19 +91,6 @@ const generateData = async () => {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-
-        // Generate last 8 weeks of activity
-        for (let i = 0; i < 8; i++) {
-            const weeksAgo = 7 - i;
-            await pool.query(
-                "INSERT INTO student_activity (student_id, course_id, time_spent_minutes, date) VALUES ($1, $2, $3, CURRENT_DATE - ($4 || ' weeks')::INTERVAL)",
-                [studentId, courseIds[0], Math.floor(Math.random() * 300) + 60, weeksAgo]
-            );
-        }
-
-        // Generate Quiz Scores (Historical)
-        console.log('Generating Quiz Scores...');
-        // Ensure quiz_scores has a created_at or date column
         await pool.query(`
             CREATE TABLE IF NOT EXISTS quiz_scores (
                 id SERIAL PRIMARY KEY,
@@ -121,18 +100,6 @@ const generateData = async () => {
                 completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-
-        // Generate last 8 weeks of quiz scores
-        for (let i = 0; i < 8; i++) {
-            const weeksAgo = 7 - i;
-            await pool.query(
-                "INSERT INTO quiz_scores (student_id, quiz_id, score, completed_at) VALUES ($1, $2, $3, NOW() - ($4 || ' weeks')::INTERVAL)",
-                [studentId, 1, Math.floor(Math.random() * 40) + 60, weeksAgo]
-            );
-        }
-
-        // 5. Create Study Plans
-        console.log('Creating Study Plans...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS study_plans (
                 id SERIAL PRIMARY KEY,
@@ -144,27 +111,8 @@ const generateData = async () => {
                 date DATE DEFAULT CURRENT_DATE
             )
         `);
-
-        // Clean up old plans if table existed
         await pool.query('DELETE FROM study_plans');
 
-        const plans = [
-            { title: 'Review Python Chapter 5', time: '9:00 AM', category: 'Reading' },
-            { title: 'Complete ML Quiz 3', time: '11:00 AM', category: 'Quiz' },
-            { title: 'Watch Neural Networks Lecture', time: '2:00 PM', category: 'Video' },
-            { title: 'Practice coding exercises', time: '4:00 PM', category: 'Practice' },
-            { title: 'Review Statistics notes', time: '6:00 PM', category: 'Reading' }
-        ];
-
-        for (const p of plans) {
-            await pool.query(
-                "INSERT INTO study_plans (student_id, title, time, category, completed) VALUES ($1, $2, $3, $4, $5)",
-                [studentId, p.title, p.time, p.category, false]
-            );
-        }
-
-        // 6. Create Lessons table
-        console.log('Creating Lessons...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS lessons (
                 id SERIAL PRIMARY KEY,
@@ -176,9 +124,92 @@ const generateData = async () => {
                 "order" INTEGER
             )
         `);
-
         await pool.query('DELETE FROM lessons');
 
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS notifications (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                title VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                type VARCHAR(50),
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await pool.query('DELETE FROM notifications');
+
+        await pool.query("ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0");
+        await pool.query("ALTER TABLE enrollments ADD COLUMN IF NOT EXISTS last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+        // Enroll all students and generate Activity/Scores
+        console.log('Generating Data for ALL Students...');
+        const allStudentsRes = await pool.query("SELECT id FROM users WHERE role = 'student'");
+        const allStudentIds = allStudentsRes.rows.map(row => row.id);
+
+        for (const sid of allStudentIds) {
+            // Enroll in random courses
+            for (const cid of courseIds) {
+                if (Math.random() > 0.1) { // 90% chance
+                    await pool.query(
+                        "INSERT INTO enrollments (student_id, course_id, enrolled_at, progress, last_accessed) VALUES ($1, $2, NOW() - INTERVAL '2 months', $3, NOW() - ($4 || ' days')::INTERVAL)",
+                        [sid, cid, Math.floor(Math.random() * 100), Math.floor(Math.random() * 14)]
+                    );
+                }
+            }
+
+            // Historical Activity
+            for (let i = 0; i < 8; i++) {
+                const weeksAgo = 7 - i;
+                await pool.query(
+                    "INSERT INTO student_activity (student_id, course_id, time_spent_minutes, date) VALUES ($1, $2, $3, CURRENT_DATE - ($4 || ' weeks')::INTERVAL)",
+                    [sid, courseIds[0], Math.floor(Math.random() * 300) + 60, weeksAgo]
+                );
+            }
+
+            // Quiz Scores
+            for (let i = 0; i < 8; i++) {
+                const weeksAgo = 7 - i;
+                await pool.query(
+                    "INSERT INTO quiz_scores (student_id, quiz_id, score, completed_at) VALUES ($1, $2, $3, NOW() - ($4 || ' weeks')::INTERVAL)",
+                    [sid, 1, Math.floor(Math.random() * 40) + 60, weeksAgo]
+                );
+            }
+
+            // Study Plans
+            const plans = [
+                { title: 'Review Python Chapter 5', time: '9:00 AM', category: 'Reading' },
+                { title: 'Complete ML Quiz 3', time: '11:00 AM', category: 'Quiz' },
+                { title: 'Watch Neural Networks Lecture', time: '2:00 PM', category: 'Video' },
+                { title: 'Practice coding exercises', time: '4:00 PM', category: 'Practice' },
+                { title: 'Review Statistics notes', time: '6:00 PM', category: 'Reading' }
+            ];
+
+            for (const p of plans) {
+                await pool.query(
+                    "INSERT INTO study_plans (student_id, title, time, category, completed) VALUES ($1, $2, $3, $4, $5)",
+                    [sid, p.title, p.time, p.category, false]
+                );
+            }
+
+            // Notifications
+            const notifications = [
+                { title: "New Badge Earned", message: "You've earned the 'Fast Learner' badge!", type: "success" },
+                { title: "Course Reminder", message: "Continue your 'Intro to Python' course.", type: "info" },
+                { title: "System Update", message: "Platform maintenance scheduled for tonight.", type: "warning" },
+                { title: "Quiz Result", message: "You scored 90% on your last quiz!", type: "success" }
+            ];
+
+            for (const n of notifications) {
+                await pool.query(
+                    "INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)",
+                    [sid, n.title, n.message, n.type]
+                );
+            }
+        }
+
+        // Create Lessons (for courses)
+        console.log('Creating Lessons...');
         const lessonData = [
             { title: "Course Introduction", duration: "5:20", type: "video" },
             { title: "Setting Up Environment", duration: "12:45", type: "video" },
@@ -195,36 +226,6 @@ const generateData = async () => {
                     [courseId, l.title, l.duration, l.type, order++]
                 );
             }
-        }
-
-        // 7. Create Notifications
-        console.log('Creating Notifications...');
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS notifications (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                title VARCHAR(255) NOT NULL,
-                message TEXT NOT NULL,
-                type VARCHAR(50),
-                is_read BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        await pool.query('DELETE FROM notifications');
-
-        const notifications = [
-            { title: "New Badge Earned", message: "You've earned the 'Fast Learner' badge!", type: "success" },
-            { title: "Course Reminder", message: "Continue your 'Intro to Python' course.", type: "info" },
-            { title: "System Update", message: "Platform maintenance scheduled for tonight.", type: "warning" },
-            { title: "Quiz Result", message: "You scored 90% on your last quiz!", type: "success" }
-        ];
-
-        for (const n of notifications) {
-            await pool.query(
-                "INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)",
-                [studentId, n.title, n.message, n.type]
-            );
         }
 
         console.log('Data Generation Complete!');
