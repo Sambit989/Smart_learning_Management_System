@@ -1,0 +1,9 @@
+--- User Credentials ---
+ID: 28 | Name: Dr. Smith | Email: instructor@test.com | Role: instructor | Password: 123456
+ID: 29 | Name: Alice Johnson | Email: alice.j@test.com | Role: student | Password: 123456
+ID: 30 | Name: Bob Smith | Email: bob@test.com | Role: student | Password: 123456
+ID: 31 | Name: Alex Student | Email: student@test.com | Role: student | Password: 123456
+ID: 32 | Name: Diana Prince | Email: diana@test.com | Role: student | Password: 123456
+ID: 33 | Name: Eve Williams | Email: eve@test.com | Role: student | Password: 123456
+ID: 34 | Name: System Admin | Email: admin@test.com | Role: admin | Password: 123456
+------------------------
