@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Download, Activity, AlertTriangle, CheckCircle, Clock, Users } from "lucide-react";
+import { FileText, Download, Activity, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import api from "@/services/api";
 
 export default function AdminReportsPage() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchReports = async () => {
+        try {
+            const res = await api.get('/admin/reports');
+            setData(res.data);
+        } catch (error) {
+            console.error("Error fetching reports", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchReports = async () => {
-            try {
-                const res = await api.get('/admin/reports');
-                setData(res.data);
-            } catch (error) {
-                console.error("Error fetching reports", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchReports();
     }, []);
 
@@ -57,11 +58,15 @@ export default function AdminReportsPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm text-foreground">
-                                        <span className="font-semibold">{act.user}</span> studied <span className="font-medium text-primary">{act.course}</span>
+                                        {act.course === 'General Platform Learning' ? (
+                                            <><span className="font-semibold">{act.user}</span> was active on the <span className="font-medium text-primary">platform</span></>
+                                        ) : (
+                                            <><span className="font-semibold">{act.user}</span> studied <span className="font-medium text-primary">{act.course}</span></>
+                                        )}
                                     </p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Clock className="w-3 h-3" /> {new Date(act.date).toLocaleDateString()}
+                                            <Clock className="w-3 h-3" /> {new Date(act.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                         </span>
                                         <span className="text-xs font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                                             {act.time_spent_minutes}m
@@ -88,7 +93,7 @@ export default function AdminReportsPage() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-xs font-medium text-success uppercase tracking-wider">System Status</p>
-                                    <h4 className="text-xl font-bold text-success-foreground mt-1">Healthy</h4>
+                                    <h4 className="text-xl font-bold text-success-foreground mt-1">{data?.pendingIssues === 0 ? "Healthy" : "Needs Review"}</h4>
                                 </div>
                                 <CheckCircle className="w-6 h-6 text-success" />
                             </div>
@@ -97,7 +102,7 @@ export default function AdminReportsPage() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-xs font-medium text-warning uppercase tracking-wider">Pending Issues</p>
-                                    <h4 className="text-xl font-bold text-warning-foreground mt-1">2 Alerts</h4>
+                                    <h4 className="text-xl font-bold text-warning-foreground mt-1">{data?.pendingIssues || 0} Alerts</h4>
                                 </div>
                                 <AlertTriangle className="w-6 h-6 text-warning" />
                             </div>
@@ -122,21 +127,26 @@ export default function AdminReportsPage() {
                         </div>
 
                         <div className="space-y-3">
-                            <div className="flex items-center gap-3 p-3 bg-secondary/20 rounded-lg border border-border/50">
-                                <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
-                                <span className="text-sm text-foreground">Database backup completed successfully</span>
-                                <span className="ml-auto text-xs text-muted-foreground">2h ago</span>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                                <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
-                                <span className="text-sm text-destructive">High memory usage detected (85%)</span>
-                                <span className="ml-auto text-xs text-destructive/70">5h ago</span>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-secondary/20 rounded-lg border border-border/50">
-                                <Users className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                                <span className="text-sm text-foreground">New instructor registration pending approval</span>
-                                <span className="ml-auto text-xs text-muted-foreground">1d ago</span>
-                            </div>
+                            {data?.systemLogs?.length > 0 ? (
+                                data.systemLogs.map((log: any, i: number) => {
+                                    const isError = log.type === 'alert' || log.type === 'warning';
+                                    const Icon = isError ? AlertTriangle : (log.type === 'success' ? CheckCircle : FileText);
+                                    const colorTheme = isError ? 'text-destructive bg-destructive/10 border-destructive/20' :
+                                        (log.type === 'success' ? 'text-success bg-success/10 border-success/20' : 'text-foreground bg-secondary/20 border-border/50');
+
+                                    return (
+                                        <div key={log.id || i} className={`flex items-center gap-3 p-3 rounded-lg border ${colorTheme}`}>
+                                            <Icon className="w-4 h-4 flex-shrink-0" />
+                                            <span className="text-sm">{log.title} - {log.message}</span>
+                                            <span className="ml-auto text-xs opacity-70 flex-shrink-0">
+                                                {new Date(log.created_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center py-6 text-muted-foreground text-sm">No system logs available.</div>
+                            )}
                         </div>
                     </motion.div>
                 </div>

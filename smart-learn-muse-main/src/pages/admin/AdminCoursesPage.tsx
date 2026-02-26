@@ -21,8 +21,6 @@ const getGradient = (str: string) => {
     return colors[Math.abs(hash) % colors.length];
 };
 
-// ... imports ...
-
 export default function AdminCoursesPage() {
     const navigate = useNavigate();
     const [courses, setCourses] = useState<any[]>([]);
@@ -106,7 +104,6 @@ export default function AdminCoursesPage() {
                     <span>{filtered.length} Courses</span>
                 </div>
             </div>
-
 
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

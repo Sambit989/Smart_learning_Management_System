@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, BookOpen, Brain, BarChart3, Trophy, Calendar,
   Settings, ChevronLeft, ChevronRight, Users, FileText, PlusCircle,
-  GraduationCap, Sparkles, LogOut, User,
+  GraduationCap, Sparkles, LogOut, User, Megaphone
 } from "lucide-react";
 
 const studentNav = [
@@ -30,6 +30,7 @@ const adminNav = [
   { title: "Users", path: "/admin/users", icon: Users },
   { title: "Courses", path: "/admin/courses", icon: BookOpen },
   { title: "Reports", path: "/admin/reports", icon: FileText },
+  { title: "Notifications", path: "/admin/notifications", icon: Megaphone },
 ];
 
 export default function AppSidebar() {

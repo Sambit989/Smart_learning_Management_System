@@ -8,8 +8,10 @@ router.use(authenticateToken);
 router.use(authorizeRole('admin'));
 
 router.get('/users', adminController.getAllUsers);
+router.post('/users/create', adminController.createUser);
 router.post('/users/status', adminController.toggleUserStatus);
 router.post('/users/role', adminController.updateUserRole);
+router.post('/broadcast', adminController.broadcastNotification);
 
 // Cleaned up routes
 router.get('/courses', adminController.getAllCourses);

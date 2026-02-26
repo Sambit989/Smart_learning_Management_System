@@ -31,10 +31,10 @@ export default function AdminDashboard() {
   }, []);
 
   const statsList = [
-    { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users, color: "bg-primary/10 text-primary", change: `+${stats.monthlyGrowth}%`, positive: true },
-    { label: "Active Courses", value: stats.activeCourses, icon: BookOpen, color: "bg-success/10 text-success", change: "+8%", positive: true },
-    { label: "Completion Rate", value: `${stats.completionRate}%`, icon: TrendingUp, color: "bg-info/10 text-info", change: "+5%", positive: true },
-    { label: "Dropout Rate", value: `${stats.dropoutRate}%`, icon: ThumbsUp, color: "bg-accent/10 text-accent", change: "-2%", positive: false },
+    { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users, color: "bg-primary/10 text-primary", change: `${stats.monthlyGrowth > 0 ? '+' : ''}${stats.monthlyGrowth}% MoM`, positive: stats.monthlyGrowth >= 0 },
+    { label: "Active Courses", value: stats.activeCourses, icon: BookOpen, color: "bg-success/10 text-success", change: "System Active", positive: true },
+    { label: "Completion Rate", value: `${stats.completionRate}%`, icon: TrendingUp, color: "bg-info/10 text-info", change: "Avg Progress", positive: true },
+    { label: "Dropout Rate", value: `${stats.dropoutRate}%`, icon: ThumbsUp, color: "bg-accent/10 text-accent", change: "30d Inactive", positive: stats.dropoutRate < 10 },
   ];
 
   return (

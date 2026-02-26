@@ -259,7 +259,7 @@ exports.recordActivity = async (req, res) => {
         if (check.rows.length > 0) {
             // Update
             await db.query(
-                'UPDATE student_activity SET time_spent_minutes = time_spent_minutes + $1 WHERE id = $2',
+                'UPDATE student_activity SET time_spent_minutes = time_spent_minutes + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
                 [minutes, check.rows[0].id]
             );
         } else {

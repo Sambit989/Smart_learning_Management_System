@@ -30,6 +30,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
 import AdminReportsPage from "@/pages/admin/AdminReportsPage";
+import AdminNotificationsPage from "@/pages/admin/AdminNotificationsPage";
 
 // Common
 import NotFound from "./pages/NotFound";
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><DashboardLayout><AdminUsersPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="/admin/courses" element={<ProtectedRoute allowedRole="admin"><DashboardLayout><AdminCoursesPage /></DashboardLayout></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><DashboardLayout><AdminReportsPage /></DashboardLayout></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute allowedRole="admin"><DashboardLayout><AdminNotificationsPage /></DashboardLayout></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

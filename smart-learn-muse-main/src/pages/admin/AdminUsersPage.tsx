@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Users, Search, MoreVertical, Ban, CheckCircle, Shield, GraduationCap, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, Search, MoreVertical, Ban, CheckCircle, Shield, GraduationCap, User, PlusCircle } from "lucide-react";
 import api from "@/services/api";
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
+
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "student" });
 
     useEffect(() => {
         fetchUsers();
@@ -26,7 +30,6 @@ export default function AdminUsersPage() {
     const toggleStatus = async (userId: number) => {
         try {
             await api.post('/admin/users/status', { userId });
-            // Optimistic update
             setUsers(users.map(u =>
                 u.id === userId ? { ...u, status: u.status === 'active' ? 'banned' : 'active' } : u
             ));
@@ -45,6 +48,25 @@ export default function AdminUsersPage() {
             case 'admin': return <Shield className="w-4 h-4 text-purple-500" />;
             case 'instructor': return <GraduationCap className="w-4 h-4 text-blue-500" />;
             default: return <User className="w-4 h-4 text-gray-500" />;
+        }
+    };
+
+    const handleCreateUser = async () => {
+        if (!newUser.name || !newUser.email || !newUser.password) {
+            alert("Name, email and password are required.");
+            return;
+        }
+        setIsCreating(true);
+        try {
+            await api.post('/admin/users/create', newUser);
+            setShowCreateModal(false);
+            setNewUser({ name: "", email: "", password: "", role: "student" });
+            fetchUsers();
+        } catch (error) {
+            console.error("Error creating user", error);
+            alert("Failed to create user.");
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -71,6 +93,12 @@ export default function AdminUsersPage() {
                     <div className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-xs font-medium flex items-center gap-2">
                         <Users className="w-4 h-4" /> Total: {users.length}
                     </div>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+                    >
+                        <PlusCircle className="w-4 h-4" /> Create User
+                    </button>
                 </div>
             </div>
 
@@ -115,8 +143,8 @@ export default function AdminUsersPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${user.status === 'banned'
-                                                ? "bg-destructive/10 text-destructive border-destructive/20"
-                                                : "bg-success/10 text-success border-success/20"
+                                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                                            : "bg-success/10 text-success border-success/20"
                                             }`}>
                                             {user.status === 'banned' ? 'Banned' : 'Active'}
                                         </span>
@@ -125,8 +153,8 @@ export default function AdminUsersPage() {
                                         <button
                                             onClick={() => toggleStatus(user.id)}
                                             className={`p-2 rounded-lg transition-colors ${user.status === 'banned'
-                                                    ? "bg-success/10 text-success hover:bg-success/20"
-                                                    : "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                                ? "bg-success/10 text-success hover:bg-success/20"
+                                                : "bg-destructive/10 text-destructive hover:bg-destructive/20"
                                                 }`}
                                             title={user.status === 'banned' ? "Activate User" : "Ban User"}
                                         >
@@ -144,6 +172,84 @@ export default function AdminUsersPage() {
                     )}
                 </div>
             </div>
+
+            {/* Create User Modal */}
+            <AnimatePresence>
+                {showCreateModal && (
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-border"
+                        >
+                            <div className="p-6">
+                                <h2 className="text-xl font-bold mb-4 text-foreground">Create New User</h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground block mb-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={newUser.name}
+                                            onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground block mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={newUser.email}
+                                            onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                            placeholder="john@example.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground block mb-1">Password</label>
+                                        <input
+                                            type="password"
+                                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={newUser.password}
+                                            onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground block mb-1">Role</label>
+                                        <select
+                                            className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                            value={newUser.role}
+                                            onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                                        >
+                                            <option value="student">Student</option>
+                                            <option value="instructor">Instructor</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="mt-6 flex justify-end gap-3">
+                                    <button
+                                        onClick={() => setShowCreateModal(false)}
+                                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                        disabled={isCreating}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleCreateUser}
+                                        disabled={isCreating}
+                                        className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {isCreating && <span className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />}
+                                        Create User
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

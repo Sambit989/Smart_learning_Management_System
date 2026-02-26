@@ -1,0 +1,4 @@
+error: column "courses.title" must appear in the GROUP BY clause or be used in an aggregate function
+    at C:\Users\Welcome\Desktop\smart-learn-muse-main\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async exports.getAdminStats (C:\Users\Welcome\Desktop\smart-learn-muse-main\backend\controllers\adminController.js:158:41)
